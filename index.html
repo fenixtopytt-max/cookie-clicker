@@ -890,9 +890,14 @@
                 <button class="prestige-btn" id="prestigeBtn">Престиж ✨</button>
             </div>
         </div>
+        <div style="text-align: center; margin-bottom: 12px;">
+            <button id="syncBtn" style="background: rgba(244,164,96,0.2); border: 1px solid rgba(244,164,96,0.4); color: #f4a460; padding: 8px 16px; border-radius: 10px; font-size: 13px; cursor: pointer;">
+                💾 Сохранить прогресс в бота
+            </button>
+        </div>
 
         <div class="footer">
-            Печенька 🍪 — Telegram Mini App<br>
+            Печенька 🍪 — Telegram Mini App создатель Печенька 🍪 <br>
             <span style="font-size: 11px;">v1.0</span>
         </div>
     </div>
@@ -1254,7 +1259,9 @@
                     if (tgUser.photo_url) {
                         document.getElementById('userAvatar').innerHTML = `<img src="${tgUser.photo_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
                     }
-                    return 'tg_' + tgUser.id;
+                    const uid = 'tg_' + tgUser.id;
+                    console.log('[CookieGame] Telegram user detected:', uid, tgUser);
+                    return uid;
                 }
 
                 // Fallback to stored guest ID
@@ -1263,6 +1270,7 @@
                     guestId = 'guest_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
                     localStorage.setItem('cookie_guest_id', guestId);
                 }
+                console.log('[CookieGame] Guest mode:', guestId);
                 return guestId;
             }
 
@@ -1382,8 +1390,33 @@
                     delete dataToSave.updatedAt;
                     dataToSave.updatedAt = this.firebase.firestore.FieldValue.serverTimestamp();
                     await this.db.collection('users').doc(this.userId).set(dataToSave, { merge: true });
+
+                    // Отправляем данные в бот (если игра открыта через WebApp)
+                    this.sendToBot('sync');
                 } catch (e) {
                     console.error('Save failed:', e);
+                }
+            }
+
+            sendToBot(action, extra = {}) {
+                if (!this.telegram || !this.telegram.sendData) return;
+                try {
+                    const payload = {
+                        action,
+                        balance: this.state.balance,
+                        energy: this.state.energy,
+                        maxEnergy: this.state.maxEnergy,
+                        clickPower: this.state.clickPower,
+                        combo: this.state.combo,
+                        bestCombo: this.state.bestCombo,
+                        totalClicks: this.state.totalClicks,
+                        totalEarned: this.state.totalEarned,
+                        prestigeCount: this.state.prestigeCount,
+                        ...extra
+                    };
+                    this.telegram.sendData(JSON.stringify(payload));
+                } catch (e) {
+                    console.warn('sendData failed:', e);
                 }
             }
 
@@ -1866,6 +1899,8 @@
                 this.updateSkin();
                 this.updateUI();
                 this.scheduleSave();
+                // Отправляем престиж в бот
+                this.sendToBot('prestige', { level: this.state.prestigeCount });
             }
 
             renderAchievements() {
@@ -1886,16 +1921,22 @@
 
             checkAchievements() {
                 let newUnlock = false;
+                const newAchievements = [];
                 ACHIEVEMENTS.forEach(ach => {
                     if (!this.state.achievements.includes(ach.id) && ach.req(this.state)) {
                         this.state.achievements.push(ach.id);
                         newUnlock = true;
+                        newAchievements.push(ach.name);
                         this.showToast(`🏆 Достижение: ${ach.name}!`);
                     }
                 });
                 if (newUnlock) {
                     this.renderAchievements();
                     this.scheduleSave();
+                    // Отправляем ачивки в бот
+                    newAchievements.forEach(name => {
+                        this.sendToBot('achievement', { achievement: name });
+                    });
                 }
             }
 
