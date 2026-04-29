@@ -415,6 +415,46 @@
       margin-bottom: 12px;
     }
 
+    .shop-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .shop-tabs::-webkit-scrollbar { display: none; }
+    .shop-tab {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: clamp(11px, 3vw, 13px);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .shop-tab.active {
+      background: rgba(255,215,0,0.15);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .bakery-level {
+      text-align: center;
+      font-size: clamp(11px, 2.8vw, 13px);
+      color: var(--gold);
+      margin-top: 6px;
+      opacity: 0.9;
+    }
+    .auto-clicker-badge {
+      text-align: center;
+      font-size: clamp(11px, 2.8vw, 13px);
+      color: var(--cyan);
+      margin-top: 4px;
+      opacity: 0.85;
+    }
+
     /* Risk games */
     .game-tabs {
       display: flex;
@@ -997,6 +1037,7 @@
       <div class="score-value" id="shop-balance">0 🍪</div>
     </div>
     <div class="shop-passive" id="shop-passive">📈 Пассивный доход: +0/сек</div>
+    <div class="shop-tabs" id="shop-tabs"></div>
     <div class="shop-grid" id="shop-grid"></div>
   </div>
 
@@ -1215,23 +1256,40 @@ const SKINS = {
   default: { icon: '🍪', bg: 'radial-gradient(circle at 35% 35%, #d4a373, #8b5e3c)' },
   gold: { icon: '🥇', bg: 'radial-gradient(circle at 35% 35%, #ffd700, #b8860b)' },
   diamond: { icon: '💎', bg: 'radial-gradient(circle at 35% 35%, #b9f2ff, #4a90e2)' },
-  fire: { icon: '🔥', bg: 'radial-gradient(circle at 35% 35%, #ff6b35, #c0392b)' }
+  fire: { icon: '🔥', bg: 'radial-gradient(circle at 35% 35%, #ff6b35, #c0392b)' },
+  galaxy: { icon: '🌌', bg: 'radial-gradient(circle at 35% 35%, #9b59b6, #2c3e50)' },
+  rainbow: { icon: '🌈', bg: 'conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000)' }
 };
 
 const UPGRADES = [
-  { id: 1, icon: '🥄', name: 'Серебряная ложка', basePrice: 50, effect: 'click', value: 1, max: 50 },
-  { id: 2, icon: '🔨', name: 'Золотая скалка', basePrice: 500, effect: 'click', value: 5, max: 30 },
-  { id: 3, icon: '🏭', name: 'Маленькая печка', basePrice: 2000, effect: 'passive', value: 1, max: 20 },
-  { id: 4, icon: '⚡', name: 'Энергетик', basePrice: 1000, effect: 'maxEnergy', value: 10, max: Infinity },
-  { id: 5, icon: '🔋', name: 'Солнечная батарея', basePrice: 3000, effect: 'regen', value: 0.2, max: 20 },
-  { id: 6, icon: '💎', name: 'Алмазная печенька', basePrice: 5000, effect: 'critDmg', value: 0.2, max: 10 },
-  { id: 7, icon: '🎰', name: 'Удачный бисквит', basePrice: 8000, effect: 'critChance', value: 0.02, max: 15 },
-  { id: 8, icon: '🏭', name: 'Конвейер', basePrice: 15000, effect: 'passive', value: 5, max: 15 },
-  { id: 9, icon: '⚡', name: 'Турбо-печка', basePrice: 25000, effect: 'click', value: 50, max: 10 },
-  { id: 10, icon: '🌟', name: 'Звёздная пыль', basePrice: 50000, effect: 'multiplier', value: 1, max: 5 },
-  { id: 11, icon: '🧠', name: 'ИИ-пекарь', basePrice: 100000, effect: 'autoClick', value: 1, max: 1 },
-  { id: 12, icon: '🔄', name: 'Престиж', basePrice: 1000000, effect: 'prestige', value: 1, max: Infinity }
+  { id: 1, icon: '🥄', name: 'Серебряная ложка', basePrice: 50, effect: 'click', value: 1, max: 50, category: 'click' },
+  { id: 2, icon: '🔨', name: 'Золотая скалка', basePrice: 500, effect: 'click', value: 5, max: 30, category: 'click' },
+  { id: 9, icon: '⚡', name: 'Турбо-печка', basePrice: 25000, effect: 'click', value: 50, max: 10, category: 'click' },
+  { id: 6, icon: '💎', name: 'Алмазная печенька', basePrice: 5000, effect: 'critDmg', value: 0.2, max: 10, category: 'click' },
+  { id: 7, icon: '🎰', name: 'Удачный бисквит', basePrice: 8000, effect: 'critChance', value: 0.02, max: 15, category: 'click' },
+
+  { id: 3, icon: '🏭', name: 'Маленькая печка', basePrice: 2000, effect: 'passive', value: 1, max: 20, category: 'passive' },
+  { id: 8, icon: '🏭', name: 'Конвейер', basePrice: 15000, effect: 'passive', value: 5, max: 15, category: 'passive' },
+  { id: 11, icon: '🧠', name: 'ИИ-пекарь', basePrice: 100000, effect: 'autoClick', value: 1, max: 1, category: 'passive' },
+
+  { id: 4, icon: '⚡', name: 'Энергетик', basePrice: 1000, effect: 'maxEnergy', value: 10, max: Infinity, category: 'energy' },
+  { id: 13, icon: '🔋', name: 'Батарейка', basePrice: 500, effect: 'maxEnergy', value: 50, max: Infinity, category: 'energy' },
+  { id: 14, icon: '⚡', name: 'Аккумулятор', basePrice: 2000, effect: 'maxEnergy', value: 200, max: Infinity, category: 'energy' },
+  { id: 15, icon: '🌊', name: 'Реактор', basePrice: 5000, effect: 'maxEnergy', value: 500, max: Infinity, category: 'energy' },
+  { id: 5, icon: '🔋', name: 'Солнечная батарея', basePrice: 3000, effect: 'regen', value: 0.2, max: 20, category: 'energy' },
+
+  { id: 10, icon: '🌟', name: 'Звёздная пыль', basePrice: 50000, effect: 'multiplier', value: 1, max: 5, category: 'special' },
+  { id: 12, icon: '🔄', name: 'Престиж', basePrice: 1000000, effect: 'prestige', value: 1, max: Infinity, category: 'special' }
 ];
+
+const SHOP_TABS = [
+  { key: 'click', label: '👆 Клик' },
+  { key: 'passive', label: '📈 Пассив' },
+  { key: 'energy', label: '🔋 Энергия' },
+  { key: 'special', label: '✨ Особое' }
+];
+
+let currentShopTab = 'click';
 
 const ACHIEVEMENTS = [
   { id: 'novice', name: 'Новичок', icon: '🍪', condition: s => s.totalClicks >= 100, reward: 50 },
@@ -1314,17 +1372,28 @@ function saveGame() {
   localStorage.setItem('cookie_save_v2', JSON.stringify(state));
   // Обновляем глобальный топ
   try {
-    const lb = JSON.parse(localStorage.getItem('cookie_leaderboard') || '[]');
+    const lb = JSON.parse(localStorage.getItem('cookie_leaderboard_v2') || '[]');
     const myId = user.id || 'me';
     const idx = lb.findIndex(x => x.id === myId);
     const entry = { id: myId, name: userName, balance: state.balance, score: state.totalEarned, avatar: userAvatar || '', date: Date.now() };
     if (idx >= 0) lb[idx] = entry;
     else lb.push(entry);
-    localStorage.setItem('cookie_leaderboard', JSON.stringify(lb));
+    localStorage.setItem('cookie_leaderboard_v2', JSON.stringify(lb));
   } catch(e) {}
 }
 
 function loadGame() {
+  // Миграция: удаляем старый топ с ботами
+  try {
+    const oldLb = localStorage.getItem('cookie_leaderboard');
+    if (oldLb) {
+      const parsed = JSON.parse(oldLb);
+      const cleaned = parsed.filter(p => p.id && !String(p.id).startsWith('bot_') && p.name && !p.isBot);
+      localStorage.setItem('cookie_leaderboard_v2', JSON.stringify(cleaned));
+      localStorage.removeItem('cookie_leaderboard');
+    }
+  } catch(e) {}
+
   try {
     const raw = localStorage.getItem('cookie_save_v2');
     if (raw) {
@@ -1337,6 +1406,16 @@ function loadGame() {
       if (!state.clickBatch) state.clickBatch = [];
     }
   } catch(e) {}
+
+  // Приветственный бонус для совсем нового игрока
+  if (state.totalClicks === 0 && state.balance === 0 && !state.welcomeBonus) {
+    state.welcomeBonus = true;
+    state.balance = 200;
+    state.totalEarned = 200;
+    showToast('👋 Добро пожаловать! Стартовый бонус: +200 🍪');
+    saveGame();
+  }
+
   recalcStats();
 }
 
@@ -1505,11 +1584,12 @@ function animateCookie() {
 
 function useUltra() {
   if (Date.now() < state.ultraCooldownEnd) return;
-  state.energy = Math.min(state.energy + 200, state.maxEnergy);
+  state.maxEnergy += 200;
+  state.energy += 200;
   state.ultraCooldownEnd = Date.now() + 5 * 60 * 1000;
   state.ultraReady = false;
   tg.HapticFeedback.notificationOccurred('success');
-  showToast('⚡ Ульта! +200 энергии');
+  showToast(`⚡ Ульта! +200 энергии и +200 макс. Теперь ${fmt(state.energy)}/${fmt(state.maxEnergy)}`);
   updateClickerUI();
   saveGame();
 }
@@ -1588,22 +1668,47 @@ function startEvent() {
 }
 
 // ===================== SHOP =====================
+function renderShopTabs() {
+  const container = document.getElementById('shop-tabs');
+  if (!container) return;
+  container.innerHTML = '';
+  for (const tab of SHOP_TABS) {
+    const btn = document.createElement('button');
+    btn.className = 'shop-tab' + (currentShopTab === tab.key ? ' active' : '');
+    btn.textContent = tab.label;
+    btn.onclick = () => {
+      currentShopTab = tab.key;
+      renderShop();
+    };
+    container.appendChild(btn);
+  }
+}
+
 function renderShop() {
   const grid = document.getElementById('shop-grid');
   grid.innerHTML = '';
   document.getElementById('shop-balance').textContent = fmt(state.balance) + ' 🍪';
   document.getElementById('shop-passive').textContent = '📈 Пассивный доход: +' + fmt(state.passiveIncome) + '/сек';
+  renderShopTabs();
 
-  for (const u of UPGRADES) {
+  const items = UPGRADES.filter(u => u.category === currentShopTab);
+  if (items.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;opacity:0.6;padding:20px;">Здесь пока пусто</div>';
+    return;
+  }
+
+  for (const u of items) {
     const lvl = state.upgrades[u.id] || 0;
     const cost = getUpgradeCost(u);
     const canBuy = state.balance >= cost && lvl < u.max;
     const card = document.createElement('div');
     card.className = 'upgrade-card' + (canBuy ? '' : ' disabled');
+    const effectText = u.effect === 'click' ? '+клик' : u.effect === 'passive' ? '+пассив' : u.effect === 'maxEnergy' ? '+энергия' : u.effect === 'regen' ? '+реген' : u.effect === 'critDmg' ? '+крит урон' : u.effect === 'critChance' ? '+крит шанс' : u.effect === 'multiplier' ? 'xвсё' : u.effect === 'autoClick' ? 'автоклик' : 'престиж';
     card.innerHTML = `
       <div class="upgrade-icon">${u.icon}</div>
       <div class="upgrade-name">${u.name}</div>
       <div class="upgrade-level">Ур. ${lvl}${u.max < Infinity ? '/' + u.max : ''}</div>
+      <div style="font-size:11px;opacity:0.6;margin-bottom:6px;">${effectText} +${u.value}</div>
       <div class="upgrade-cost">${fmt(cost)} 🍪</div>
     `;
     card.onclick = () => buyUpgrade(u.id);
